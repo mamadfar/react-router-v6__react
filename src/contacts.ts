@@ -1,6 +1,7 @@
 import localforage from "localforage";
 import { matchSorter } from "match-sorter";
 import sortBy from "sort-by";
+import {Contact_Type} from "./routes/Contact.tsx";
 
 export async function getContacts(query?: string) {
     await fakeNetwork(`getContacts:${query}`);
@@ -29,7 +30,7 @@ export async function getContact(id: string) {
     return contact ?? null;
 }
 
-export async function updateContact(id: string, updates) {
+export async function updateContact(id: string, updates: Partial<Contact_Type>) {
     await fakeNetwork('');
     const contacts: unknown[] = await localforage.getItem("contacts") || [];
     const contact = contacts.find(contact => contact?.id === id);

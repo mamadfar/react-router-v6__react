@@ -1,31 +1,62 @@
-import {Form, Link, NavLink, Outlet, redirect, useLoaderData, useNavigation} from "react-router-dom";
-import {createContact, getContacts} from "../contacts.ts";
+// noinspection t
 
-export const loader = async () => {
-    const contacts = await getContacts();
-    return {contacts};
+import {
+    Form,
+    NavLink,
+    Outlet,
+    redirect,
+    useLoaderData,
+    useNavigation,
+    LoaderFunction,
+    ActionFunction, useSubmit
+} from "react-router-dom";
+import {createContact, getContacts} from "../contacts.ts";
+import {ChangeEvent, useEffect} from "react";
+
+export const loader: LoaderFunction = async ({request}) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('q');
+    const contacts = await getContacts(query || '');
+    return {contacts, query};
 }
 
-export const action = async () => {
+export const action: ActionFunction = async () => {
     const contact = await createContact();
     return redirect(`/contacts/${contact.id}/edit`);
 }
 
 export default function Root() {
 
-    const {contacts} = useLoaderData();
+    const {contacts, query} = useLoaderData() || {contacts: [], query: ''};
     const navigation = useNavigation();
+    const submit = useSubmit();
+
+    // const searching = navigation.location && new URLSearchParams(navigation.location.search).has("q"); //? It's equivalent to navigation.state === 'loading'
+
+    const onSearch = (e: ChangeEvent<HTMLInputElement>) => {
+        const isFirstSearch = query === null;
+        submit(e.currentTarget.form, {
+            replace: !isFirstSearch,
+        });
+    }
+
+    useEffect(() => {
+        (document.getElementById('q') as HTMLInputElement).value = query;
+        console.log('query', query)
+    }, [query])
 
     return (
         <>
             <div id="sidebar">
                 <h1>React Router Contacts</h1>
                 <div>
-                    <form id="search-form" role="search">
-                        <input id="q" aria-label="Search contacts" placeholder="Search" name="q" type="search"/>
-                        <div id="search-spinner" aria-hidden hidden={true}/>
+                    <Form id="search-form" role="search">
+                        <input id="q" aria-label="Search contacts" placeholder="Search" name="q" type="search" defaultValue={query} onChange={onSearch}
+                               className={navigation.state === 'loading' ? "loading" : ""}
+                        />
+                        <div id="search-spinner" aria-hidden hidden={navigation.state !== 'loading'}/>
                         <div className="sr-only" aria-live="polite"></div>
-                    </form>
+                    </Form>
                     <Form method="post">
                         <button type="submit">New</button>
                     </Form>
